@@ -1,6 +1,64 @@
 // Taken from http://foddy.net/Athletics.html?webgl=true
 // Formatted using http://jsbeautifier.org.
-// Comments beginning with "CHANGE:" indicate places I have modified.
+// Comments beginning with "CHANGE:" indicate places I
+// have modified.
+//
+// Exposes an API via the window.qwopControl object.
+// - wait(): get a Promise that resolves when the game has
+//   loaded and a new episode has been started.
+// - setButtons([boolean]): set the button mask.
+//   The buttons are [Q, W, O, P].
+// - step(): step the game by one timestep. Returns a
+//   boolean indicating if the game is over.
+// - reset(): start a new game. Should only be called
+//   once the current game is over.
+
+// CHANGE: global variables used to hook into the game.
+TIMESTEP_DURATION = 1 / 15;
+INIT_STEPS = 15;
+window.qwopControl = {
+    'wait': function() {
+        return new Promise((resolve) => {
+            var interval;
+            interval = setInterval(() => {
+                if (!this.step) {
+                    // Still loading.
+                    return;
+                }
+                this.step();
+                if (this.mainObject) {
+                    this.mainObject.onmousedown({pos: {x: 100, y: 100}});
+                    for (var i = 0; i < INIT_STEPS; ++i) {
+                        this.step();
+                    }
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 10);
+        });
+    },
+    'setButtons': function(mask) {
+        this.mainObject.QDown = mask[0];
+        this.mainObject.WDown = mask[1];
+        this.mainObject.ODown = mask[2];
+        this.mainObject.PDown = mask[3];
+    },
+    'step': null,
+    'reset': function() {
+        if (!this.isDone) {
+            throw Error('episode is not finished');
+        }
+        this.isDone = false;
+        this.mainObject.oninputup('reset');
+        this.setButtons([false, false, false, false]);
+        for (var i = 0; i < INIT_STEPS; ++i) {
+            this.step();
+        }
+    },
+    'mainObject': null,
+    'timestamp': 0,
+    'isDone': false
+};
 
 ! function() {
     "use strict";
@@ -530,6 +588,10 @@
             e.set_clamp_s(33071), e.set_clamp_t(33071), s.set_clamp_s(33071), s.set_clamp_t(33071), t.slot = 1, e.slot = 2, s.slot = 2, this.bevelShaderBody.set_texture("tex1", t), this.bevelShaderHead.set_texture("tex1", t), this.bevelShaderLeftArm.set_texture("tex1", t), this.bevelShaderRightArm.set_texture("tex1", t), this.bevelShaderLeftForearm.set_texture("tex1", t), this.bevelShaderRightForearm.set_texture("tex1", t), this.bevelShaderLeftThigh.set_texture("tex1", t), this.bevelShaderRightThigh.set_texture("tex1", t), this.bevelShaderLeftCalf.set_texture("tex1", t), this.bevelShaderRightCalf.set_texture("tex1", t), this.bevelShaderBody.set_texture("tex2", s), this.bevelShaderHead.set_texture("tex2", e), this.bevelShaderLeftArm.set_texture("tex2", e), this.bevelShaderRightArm.set_texture("tex2", e), this.bevelShaderLeftForearm.set_texture("tex2", e), this.bevelShaderRightForearm.set_texture("tex2", e), this.bevelShaderLeftThigh.set_texture("tex2", e), this.bevelShaderRightThigh.set_texture("tex2", e), this.bevelShaderLeftCalf.set_texture("tex2", e), this.bevelShaderRightCalf.set_texture("tex2", e), this.bevelShaderBody.set_vector2("screenRes", new I.Vector(t.width, t.height)), this.bevelShaderHead.set_vector2("screenRes", new I.Vector(t.width, t.height)), this.bevelShaderLeftArm.set_vector2("screenRes", new I.Vector(t.width, t.height)), this.bevelShaderRightArm.set_vector2("screenRes", new I.Vector(t.width, t.height)), this.bevelShaderLeftForearm.set_vector2("screenRes", new I.Vector(t.width, t.height)), this.bevelShaderRightForearm.set_vector2("screenRes", new I.Vector(t.width, t.height)), this.bevelShaderLeftThigh.set_vector2("screenRes", new I.Vector(t.width, t.height)), this.bevelShaderRightThigh.set_vector2("screenRes", new I.Vector(t.width, t.height)), this.bevelShaderLeftCalf.set_vector2("screenRes", new I.Vector(t.width, t.height)), this.bevelShaderRightCalf.set_vector2("screenRes", new I.Vector(t.width, t.height)), this.ui_batcher.set_layer(2), this.bg_batcher.set_layer(-2), this.player_atlas_json = m.resources.cache.get("assets/playercolor.json").asset.json, this.ui_atlas_json = m.resources.cache.get("assets/UISprites.json").asset.json, this.atlasImage = m.resources.cache.get("assets/playercolor.png"), this.uiAtlasImage = m.resources.cache.get("assets/UISprites.png"), this.uiData = o.importers.texturepacker.TexturePackerJSON.parse(this.ui_atlas_json), this.create_world(), this.create_player(), this.create_ui(), this.connect_input(), m.audio.on("music", "load", function() {
                 m.audio.loop("music"), m.audio.volume("music", 0)
             }), this.doneLoading = !0
+
+            // CHANGE: now that we are loaded, we can be
+            // controlled by an agent.
+            window.qwopControl.mainObject = this;
         },
         create_world: function() {
             var t = 640,
@@ -845,6 +907,9 @@
             })
         },
         endGame: function() {
+            // CHANGE: note the end of an episode.
+            window.qwopControl.isDone = true;
+
             null != this.rightHip && (this.rightHip.setMotorSpeed(0), this.rightHip.enableMotor(!1), this.leftHip.setMotorSpeed(0), this.leftHip.enableMotor(!1), this.rightKnee.enableLimit(!1), this.rightKnee.enableMotor(!1), this.leftKnee.enableLimit(!1), this.leftKnee.enableMotor(!1), this.rightShoulder.enableLimit(!1), this.rightShoulder.enableMotor(!1), this.leftShoulder.enableLimit(!1), this.leftShoulder.enableMotor(!1)), 0 == this.gameEnded && 1 == this.jumpLanded ? (this.jumpEnding.set_pos(new I.Vector(this.world_camera.get_pos().x + .5 * l.screenWidth, this.world_camera.get_pos().y + .5 * l.screenHeight)), this.gameOverText.set_text("" + this.score + " metres in " + Math.round(this.scoreTime) / 10 + " seconds"), this.gameOverText.set_pos(new I.Vector(this.jumpEnding.get_pos().x, this.jumpEnding.get_pos().y + 22)), this.gameEnded = !0) : 0 == this.gameEnded && 0 == this.jumpLanded && (this.fallenEnding.set_pos(new I.Vector(this.world_camera.get_pos().x + .5 * l.screenWidth, this.world_camera.get_pos().y + .5 * l.screenHeight)), this.gameOverText.set_text("" + this.score + " metres"), this.gameOverText.set_pos(new I.Vector(this.fallenEnding.get_pos().x, this.fallenEnding.get_pos().y - 10)), this.gameEnded = !0)
         },
         reset: function() {
@@ -11062,18 +11127,29 @@
             }), this.app.on_event({
                 type: 2
             }), this.app.snow_config.has_loop && this.request_update()
+
+            // CHANGE: setup the time control API.
+            window.qwopControl.timestamp = 0;
+            window.qwopControl.step = () => {
+                if (window.qwopControl.isDone) {
+                    return true;
+                }
+                window.qwopControl.timestamp += TIMESTEP_DURATION;
+                if (window.qwopControl.wantsUpdate) {
+                    window.qwopControl.wantsUpdate = false;
+                    this.snow_core_loop(TIMESTEP_DURATION * 1e3);
+                }
+                return window.qwopControl.isDone;
+            };
         },
         shutdown: function() {},
         timestamp: function() {
-            var t;
-            return t = null != window.performance ? window.performance.now() / 1e3 : S.Timer.stamp(), t - this.start_timestamp
+            // CHANGE: use a synthetic timestamp.
+            return window.qwopControl.timestamp;
         },
         request_update: function() {
-            var t = this;
-            null != (k = window, s(k, k.requestAnimationFrame)) ? window.requestAnimationFrame(s(this, this.snow_core_loop)) : window.setTimeout(function() {
-                var e = t.timestamp();
-                t._time_now += e - t._lf_timestamp, t.snow_core_loop(1e3 * t._time_now), t._lf_timestamp = e
-            }, 1e3 * this.app.host.render_rate | 0)
+            // CHANGE: use a synthetic frame poll.
+            window.qwopControl.wantsUpdate = true;
         },
         snow_core_loop: function(t) {
             return null == t && (t = .016), this.update(), this.app.on_event({
