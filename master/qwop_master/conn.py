@@ -20,6 +20,7 @@ class Conn:
         self._obs_size = obs_size
         self._conn = redis.StrictRedis(host=redis_host, port=redis_port)
         self._bg_thread = Thread(target=self._run_read_loop, daemon=True)
+        self._bg_thread.start()
         self._pending_lock = Lock()
         self._pending_messages = []
 
