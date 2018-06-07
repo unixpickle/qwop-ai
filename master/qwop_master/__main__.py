@@ -29,7 +29,7 @@ def main():
     with tf.Session() as sess:
         model = create_model(args, sess)
         roller = RemoteRoller(model, conn,
-                              min_rollouts=args.min_rollouts,
+                              min_timesteps=args.min_timesteps,
                               min_horizon=args.min_horizon,
                               min_step_batch=args.min_step_batch,
                               timeout=args.env_timeout)
@@ -69,7 +69,8 @@ def arg_parser():
     parser.add_argument('--obs-size', help='observation image size', default=84, type=int)
     parser.add_argument('--act-size', help='action vector size', default=4, type=int)
 
-    parser.add_argument('--min-rollouts', help='minimum rollouts per batch', default=64, type=int)
+    parser.add_argument('--min-timesteps', help='minimum timesteps per batch', default=1024,
+                        type=int)
     parser.add_argument('--min-horizon', help='minimum timesteps per rollout', default=16, type=int)
     parser.add_argument('--min-step-batch', help='minimum batch size per step', default=1, type=int)
     parser.add_argument('--env-timeout', help='the environment timeout', default=300, type=int)

@@ -16,15 +16,19 @@ class RemoteRoller(Roller):
     environments until there are enough rollouts.
     """
 
-    def __init__(self, model, conn, min_rollouts=64, min_horizon=16, min_step_batch=1, timeout=300):
+    def __init__(self, model, conn,
+                 min_timesteps=64,
+                 min_horizon=16,
+                 min_step_batch=1,
+                 timeout=300):
         """
         Create a new RemoteRoller.
 
         Args:
           model: the model to run.
           conn: a Conn to a database.
-          min_rollouts: the minimum number of rollouts to
-            generate per rollouts() call.
+          min_timesteps: the minimum number of timesteps
+            to generate per rollouts() call.
           min_horizon: the minimum number of timesteps per
             rollout. Rollouts may be shorter if a done
             condition is met.
@@ -37,7 +41,7 @@ class RemoteRoller(Roller):
         """
         self.model = model
         self.conn = conn
-        self.min_rollouts = min_rollouts
+        self.min_timesteps = min_timesteps
         self.min_horizon = min_horizon
         self.min_step_batch = min_step_batch
         self.timeout = timeout
@@ -75,11 +79,11 @@ class RemoteRoller(Roller):
         Check if we have completed enough rollouts for this
         batch.
         """
-        num_rollouts = len(self._completed_rollouts)
+        num_steps = sum(r.num_steps for r in self._completed_rollouts)
         for rollout in self._current_rollouts.values():
             if rollout.num_steps >= self.min_horizon:
-                num_rollouts += 1
-        return num_rollouts >= self.min_rollouts
+                num_steps += rollout.num_steps
+        return num_steps >= self.min_timesteps
 
     def _extract_usable_rollouts(self):
         """
