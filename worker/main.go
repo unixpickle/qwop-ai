@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 
 type Args struct {
 	RedisHost     string
+	RedisPort     int
 	ChannelPrefix string
 	NumEnvs       int
 	Chrome        string
@@ -36,7 +38,8 @@ func main() {
 
 	var args Args
 
-	flag.StringVar(&args.RedisHost, "redis", "qwop-redis:6379", "the Redis host")
+	flag.StringVar(&args.RedisHost, "redis-host", "qwop-redis", "the Redis host")
+	flag.IntVar(&args.RedisPort, "redis-port", 6379, "the Redis port")
 	flag.StringVar(&args.ChannelPrefix, "channel", "qwop-worker", "the prefix for channel names")
 	flag.IntVar(&args.NumEnvs, "envs", 4, "number of environments to run")
 	flag.StringVar(&args.Chrome, "chrome", "chromium-browser", "Chrome executable name")
@@ -82,7 +85,8 @@ func RunEnvironmentLoop(args *Args, idx int) {
 // Kills the process upon other errors.
 func RunEnvironment(args *Args, idx int) {
 	log.Print("creating new session...")
-	session, err := NewSession(args.RedisHost, args.ChannelPrefix)
+	session, err := NewSession(fmt.Sprintf("%s:%d", args.RedisHost, args.RedisPort),
+		args.ChannelPrefix)
 	essentials.Must(err)
 	defer session.Close()
 
