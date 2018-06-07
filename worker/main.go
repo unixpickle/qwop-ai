@@ -24,7 +24,8 @@ type Args struct {
 	NumEnvs       int
 	Chrome        string
 
-	ImageSize int
+	ImageSize     int
+	TimestepLimit int
 
 	ServerAddr string
 	ServerPath string
@@ -41,6 +42,7 @@ func main() {
 	flag.StringVar(&args.Chrome, "chrome", "chromium-browser", "Chrome executable name")
 
 	flag.IntVar(&args.ImageSize, "image-size", 84, "size of observation images")
+	flag.IntVar(&args.TimestepLimit, "timestep-limit", 900, "max timesteps per episode")
 
 	flag.StringVar(&args.ServerAddr, "server-addr", "127.0.0.1:8080", "address for the server")
 	flag.StringVar(&args.ServerPath, "server-path", "/web", "URL for the server")
@@ -83,6 +85,7 @@ func RunEnvironment(args *Args, idx int) {
 	log.Printf("%s: waiting for environment", session.EnvID())
 	essentials.Must(WaitForEnv(chromeClient))
 	newEpisode := true
+	timesteps := 0
 	for {
 		log.Printf("%s: encoding state", session.EnvID())
 		state, err := StateForEnv(chromeClient, newEpisode, args.ImageSize)
@@ -95,9 +98,14 @@ func RunEnvironment(args *Args, idx int) {
 		essentials.Must(err)
 		done, err := StepEnv(chromeClient, action)
 		essentials.Must(err)
+		timesteps += 1
+		if timesteps > args.TimestepLimit {
+			done = true
+		}
 		if done {
 			essentials.Must(ResetEnv(chromeClient))
 			newEpisode = true
+			timesteps = 0
 		} else {
 			newEpisode = false
 		}

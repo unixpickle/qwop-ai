@@ -48,9 +48,10 @@ window.qwopControl = {
     },
     'step': null,
     'reset': function() {
-        if (!this.isDone) {
-            throw Error('episode is not finished');
-        }
+        // Early resets are useful for timestep limits.
+        // if (!this.isDone) {
+        //     throw Error('episode is not finished');
+        // }
         this.isDone = false;
         this.mainObject.oninputup('reset');
         this.setButtons([false, false, false, false]);
