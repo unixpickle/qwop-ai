@@ -3,6 +3,7 @@ Train a QWOP agent.
 """
 
 import argparse
+import itertools
 import logging
 import os
 
@@ -43,7 +44,7 @@ def main():
         if os.path.exists(args.checkpoint):
             saver.restore(sess, ckpt_file)
 
-        while True:
+        for outer_iter in itertools.count():
             rollouts = roller.rollouts()
             logging.info('mean cumulative reward: %f',
                          sum(r.total_reward for r in rollouts) / len(rollouts))
@@ -51,7 +52,8 @@ def main():
                              batch_size=args.ppo_batch,
                              num_iter=args.ppo_iter,
                              log_fn=lambda x: logging.info('%s', x))
-            saver.save(sess, os.path.join(args.checkpoint, 'model.ckpt'))
+            if outer_iter % args.save_interval == 0:
+                saver.save(sess, os.path.join(args.checkpoint, 'model.ckpt'))
 
 
 def create_model(args, sess):
@@ -68,6 +70,7 @@ def arg_parser():
     parser.add_argument('--redis-port', help='Redis port', default=6379, type=int)
     parser.add_argument('--channel', help='worker channel prefix', default='qwop-worker')
     parser.add_argument('--checkpoint', help='agent checkpoint directory', default='checkpoint')
+    parser.add_argument('--save-interval', help='training iters per save', default=5, type=int)
     parser.add_argument('--obs-size', help='observation image size', default=84, type=int)
     parser.add_argument('--act-size', help='action vector size', default=4, type=int)
 
