@@ -1,0 +1,8 @@
+FROM tensorflow/tensorflow:latest-py3
+
+# TODO: have a separate Dockerfile with tensorflow:latest-gpu-py3.
+
+ADD master /master
+RUN pip install -e /master
+
+ENTRYPOINT ["python", "-u", "/master/qwop_master"]
