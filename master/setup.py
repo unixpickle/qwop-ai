@@ -14,7 +14,6 @@ setup(
     packages=['qwop_master'],
     install_requires=[
         'anyrl>=0.11.29,<0.12.0',
-        'tensorflow-gpu',
         'redis'
     ]
 )

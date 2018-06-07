@@ -97,16 +97,18 @@ func RunEnvironment(args *Args, idx int) {
 }
 
 // Start headless chrome in a background process.
-func StartChrome(serverAddr string, port int) (*chrome.Conn, *exec.Cmd, error) {
-	command := exec.Command("chromium-browser",
+func StartChrome(chromeExec, serverAddr string, port int) (*chrome.Conn, *exec.Cmd, error) {
+	command := exec.Command(chromeExec,
 		"--no-sandbox",
 		"--mute-audio",
 		"--headless",
 		"--remote-debugging-port="+strconv.Itoa(port),
 		"--remote-debugging-address=0.0.0.0",
 		"--window-size=640x400",
-		"http://"+serverAddr+"/")
-	command.Start()
+		"http://"+serverAddr+"/index.html")
+	if err := command.Start(); err != nil {
+		return nil, nil, err
+	}
 	for i := 0; i < 20; i++ {
 		endpoints, err := chrome.Endpoints(context.Background(), "localhost:"+strconv.Itoa(port))
 		if err == nil {

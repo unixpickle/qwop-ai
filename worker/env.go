@@ -111,7 +111,7 @@ func ResetEnv(conn *chrome.Conn) (err error) {
 	defer essentials.AddCtxTo("ResetEnv", &err)
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(EnvResetTimeout))
 	defer cancel()
-	code := "Promise.resolve(window.qwopController.reset())"
+	code := "Promise.resolve(window.qwopControl.reset())"
 	return conn.EvalPromise(ctx, code, nil)
 }
 
@@ -120,7 +120,7 @@ func ScoreForEnv(conn *chrome.Conn) (score float64, err error) {
 	defer essentials.AddCtxTo("ScoreForEnv", &err)
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(EnvScoreTimeout))
 	defer cancel()
-	code := "Promise.resolve(window.qwopController.score())"
+	code := "Promise.resolve(window.qwopControl.score())"
 	if err := conn.EvalPromise(ctx, code, &score); err != nil {
 		return 0, err
 	}
