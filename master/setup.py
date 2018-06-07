@@ -13,8 +13,8 @@ setup(
     author_email='unixpickle@gmail.com',
     packages=['qwop_master'],
     install_requires=[
-        'numpy>=1.0.0,<2.0.0',
         'anyrl>=0.11.29,<0.12.0',
-        'tensorflow-gpu'
+        'tensorflow-gpu',
+        'redis'
     ]
 )

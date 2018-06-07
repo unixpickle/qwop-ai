@@ -2,7 +2,10 @@
 Communicating with remote workers.
 """
 
+import logger
 from threading import Lock
+
+import redis
 
 
 class Conn:
@@ -11,10 +14,11 @@ class Conn:
     actions to workers.
     """
 
-    def __init__(self, redis_addr):
-        # TODO: connect here.
-        self._conn = None
-        # TODO: start background thread here.
+    def __init__(self, redis_host, redis_port, channel_prefix, obs_size=84):
+        self._channel_prefix = channel_prefix
+        self._obs_size = obs_size
+        self._conn = redis.StrictRedis(host=redis_host, port=redis_port)
+        self._bg_thread = Thread(target=self._run_read_loop, daemon=True)
         self._pending_lock = Lock()
         self._pending_messages = []
 
@@ -46,3 +50,19 @@ class Conn:
             action is an array-like of four booleans.
         """
         # TODO: this.
+
+    def _run_read_loop(self):
+        pubsub = self._conn.pubsub()
+        pubsub.psubscribe('%s:state:*' % self._channel_prefix)
+        while True:
+            msg = pubsub.get_message()
+            if msg['type'] != 'message':
+                continue
+            if len(msg['data']) < 3 * (self._obs_size ** 2) + 2:
+                logger.warning('state message is too small (%d bytes)' % len(msg['data']))
+                continue
+            env_id = msg['channel'].split(':')[-1]
+            # TODO: decode image, done, and reward.
+            with self._pending_lock:
+                # TODO: push to self._pending_messages
+                pass
