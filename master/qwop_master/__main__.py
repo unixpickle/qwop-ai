@@ -38,6 +38,8 @@ def main():
 
         saver = tf.train.Saver()
         ckpt_file = os.path.join(args.checkpoint, 'model.ckpt')
+
+        sess.run(tf.global_variables_initializer())
         if os.path.exists(args.checkpoint):
             saver.restore(sess, ckpt_file)
 
