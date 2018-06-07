@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"log"
 	"math/rand"
 	"net/http"
 	"os/exec"
@@ -21,6 +22,7 @@ type Args struct {
 	RedisHost     string
 	ChannelPrefix string
 	NumEnvs       int
+	Chrome        string
 
 	ImageSize int
 
@@ -36,6 +38,7 @@ func main() {
 	flag.StringVar(&args.RedisHost, "redis", "qwop-redis:6379", "the Redis host")
 	flag.StringVar(&args.ChannelPrefix, "channel", "qwop-worker", "the prefix for channel names")
 	flag.IntVar(&args.NumEnvs, "envs", 4, "number of environments to run")
+	flag.StringVar(&args.Chrome, "chrome", "chromium-browser", "Chrome executable name")
 
 	flag.IntVar(&args.ImageSize, "image-size", 84, "size of observation images")
 
@@ -69,7 +72,7 @@ func RunEnvironment(args *Args, idx int) {
 	essentials.Must(err)
 	defer session.Close()
 
-	chromeClient, chromeProc, err := StartChrome(args.ServerAddr, 9222+idx)
+	chromeClient, chromeProc, err := StartChrome(args.Chrome, args.ServerAddr, 9222+idx)
 	essentials.Must(err)
 	defer func() {
 		chromeClient.Close()
@@ -77,13 +80,18 @@ func RunEnvironment(args *Args, idx int) {
 		go chromeProc.Wait()
 	}()
 
+	log.Printf("%s: waiting for environment", session.EnvID())
 	essentials.Must(WaitForEnv(chromeClient))
 	newEpisode := true
 	for {
+		log.Printf("%s: encoding state", session.EnvID())
 		state, err := StateForEnv(chromeClient, newEpisode, args.ImageSize)
 		essentials.Must(err)
+		log.Printf("%s: sending state", session.EnvID())
 		essentials.Must(session.SendState(state))
+		log.Printf("%s: receiving action", session.EnvID())
 		action, err := session.ReceiveAct()
+		log.Printf("%s: stepping environment with action %v", session.EnvID(), action[:])
 		essentials.Must(err)
 		done, err := StepEnv(chromeClient, action)
 		essentials.Must(err)

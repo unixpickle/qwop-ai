@@ -21,18 +21,18 @@ type Session struct {
 	client        *redis.Client
 	pubsub        *redis.PubSub
 	channelPrefix string
-	envId         string
+	envID         string
 }
 
 // NewSession establishes a database connection.
 func NewSession(host, channelPrefix string) (*Session, error) {
-	envId := fmt.Sprintf("%12x", rand.Intn(0x1000000000000))
+	envID := fmt.Sprintf("%12x", rand.Intn(0x1000000000000))
 	for {
 		client := redis.NewClient(&redis.Options{Addr: host})
 		if err := client.Ping().Err(); err != nil {
 			return nil, err
 		}
-		ps := client.Subscribe(channelPrefix + ":act:" + envId)
+		ps := client.Subscribe(channelPrefix + ":act:" + envID)
 		_, err := ps.ReceiveTimeout(SubscribeTimeout)
 		if err != nil {
 			client.Close()
@@ -43,15 +43,20 @@ func NewSession(host, channelPrefix string) (*Session, error) {
 			client:        client,
 			pubsub:        ps,
 			channelPrefix: channelPrefix,
-			envId:         envId,
+			envID:         envID,
 		}, nil
 	}
+}
+
+// envID returns the environment ID.
+func (s *Session) EnvID() string {
+	return s.envID
 }
 
 // SendState publishes an environment state update.
 func (s *Session) SendState(state []byte) error {
 	return essentials.AddCtx("SendState",
-		s.client.Publish(s.channelPrefix+":state:"+s.envId, state).Err())
+		s.client.Publish(s.channelPrefix+":state:"+s.envID, state).Err())
 }
 
 // ReceiveAct receives an action from a master.

@@ -34,8 +34,8 @@ func WaitForEnv(conn *chrome.Conn) (err error) {
 	for i := 0; i < 20; i++ {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(EnvWaitTimeout))
 		defer cancel()
-		if err := conn.EvalPromise(ctx, code, nil); err != nil {
-			continue
+		if err := conn.EvalPromise(ctx, code, nil); err == nil {
+			return nil
 		}
 		time.Sleep(time.Second)
 	}
