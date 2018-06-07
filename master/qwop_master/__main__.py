@@ -45,6 +45,8 @@ def main():
 
         while True:
             rollouts = roller.rollouts()
+            logging.info('mean cumulative reward: %f',
+                         sum(r.total_reward for r in rollouts) / len(rollouts))
             ppo.run_optimize(optimize, rollouts,
                              batch_size=args.ppo_batch,
                              num_iter=args.ppo_iter,
