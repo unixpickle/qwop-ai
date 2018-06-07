@@ -13,6 +13,8 @@
 // - reset(): start a new game. Should only be called
 //   once the current game is over.
 // - score(): get the current score.
+// - screenshot(width, height): get a screenshot as a
+//   base64-encoded PNG.
 
 // CHANGE: global variables used to hook into the game.
 TIMESTEP_DURATION = 1 / 15;
@@ -58,6 +60,15 @@ window.qwopControl = {
     },
     'score': function() {
         return this.mainObject.score;
+    },
+    'screenshot': function(width, height) {
+        var canvas = document.getElementsByTagName('canvas')[0];
+        var dst = document.createElement('canvas');
+        dst.width = width;
+        dst.height = height;
+        dst.getContext('2d').drawImage(canvas, 0, 0, width, height);
+        var prefixLen = 'data:image/png;base64,'.length;
+        return dst.toDataURL('image/png').slice(prefixLen);
     },
     'mainObject': null,
     'timestamp': 0,
@@ -5534,6 +5545,8 @@ window.qwopControl = {
         for (var s = 0, i = ["webgl", "experimental-webgl"]; s < i.length;) {
             var n = i[s];
             ++s;
+            // CHANGE: needed to render the image into a canvas.
+            e['preserveDrawingBuffer'] = true;
             var o = t.getContext(n, e);
             if (null != o) return o
         }

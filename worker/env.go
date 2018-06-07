@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"image/png"
 	"time"
 
-	"github.com/nfnt/resize"
 	"github.com/unixpickle/essentials"
 	"github.com/unixpickle/muniverse/chrome"
 )
@@ -87,7 +87,12 @@ func ObserveEnv(conn *chrome.Conn, size int) (data []byte, err error) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(EnvObserveTimeout))
 	defer cancel()
 
-	imageData, err := conn.ScreenshotPNG(ctx)
+	code := fmt.Sprintf("Promise.resolve(window.qwopControl.screenshot(%d, %d))", size, size)
+	var base64Data string
+	if err := conn.EvalPromise(ctx, code, &base64Data); err != nil {
+		return nil, err
+	}
+	imageData, err := base64.StdEncoding.DecodeString(base64Data)
 	if err != nil {
 		return nil, err
 	}
@@ -95,11 +100,10 @@ func ObserveEnv(conn *chrome.Conn, size int) (data []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	resized := resize.Resize(uint(size), uint(size), image, resize.Bilinear)
 	res := make([]byte, 0, size*size*3)
 	for y := 0; y < size; y++ {
 		for x := 0; x < size; x++ {
-			r, g, b, _ := resized.At(x, y).RGBA()
+			r, g, b, _ := image.At(x, y).RGBA()
 			res = append(res, byte(r>>8), byte(g>>8), byte(b>>8))
 		}
 	}
