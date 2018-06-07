@@ -55,7 +55,7 @@ func main() {
 	time.Sleep(time.Second)
 
 	for i := 0; i < args.NumEnvs; i++ {
-		go RunEnvironment(&args, i)
+		go RunEnvironmentLoop(&args, i)
 	}
 
 	select {}
@@ -67,13 +67,26 @@ func GameDataServer(args *Args) {
 	http.ListenAndServe(args.ServerAddr, nil)
 }
 
+// RunEnvironmentLoop runs environment after environment,
+// starting a new environment whenever the master changes.
+func RunEnvironmentLoop(args *Args, idx int) {
+	for {
+		RunEnvironment(args, idx)
+	}
+}
+
 // RunEnvironment starts an environment and serves it to
 // the master agent.
+//
+// Returns when/if the master agent changes.
+// Kills the process upon other errors.
 func RunEnvironment(args *Args, idx int) {
+	log.Print("creating new session...")
 	session, err := NewSession(args.RedisHost, args.ChannelPrefix)
 	essentials.Must(err)
 	defer session.Close()
 
+	log.Print("creating new Chrome client...")
 	chromeClient, chromeProc, err := StartChrome(args.Chrome, args.ServerAddr, 9222+idx)
 	essentials.Must(err)
 	defer func() {
@@ -90,19 +103,28 @@ func RunEnvironment(args *Args, idx int) {
 		log.Printf("%s: encoding state", session.EnvID())
 		state, err := StateForEnv(chromeClient, newEpisode, args.ImageSize)
 		essentials.Must(err)
+
 		log.Printf("%s: sending state", session.EnvID())
 		essentials.Must(session.SendState(state))
+
 		log.Printf("%s: receiving action", session.EnvID())
 		action, err := session.ReceiveAct()
-		log.Printf("%s: stepping environment with action %v", session.EnvID(), action[:])
+		if err, ok := err.(*essentials.CtxError); ok && err.Original == ErrNewMaster {
+			log.Printf("%s: killing due to new master", session.EnvID())
+			return
+		}
 		essentials.Must(err)
+
+		log.Printf("%s: stepping environment with action %v", session.EnvID(), action[:])
 		done, err := StepEnv(chromeClient, action)
 		essentials.Must(err)
+
 		timesteps += 1
 		if timesteps > args.TimestepLimit {
 			done = true
 		}
 		if done {
+			log.Printf("%s: resetting environment", session.EnvID())
 			essentials.Must(ResetEnv(chromeClient))
 			newEpisode = true
 			timesteps = 0

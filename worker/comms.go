@@ -15,13 +15,16 @@ const (
 	ActionTimeout    = time.Minute * 5
 )
 
+var ErrNewMaster = errors.New("the master has changed")
+
 // A Session serves up a single environment to remote
 // masters.
 type Session struct {
-	client        *redis.Client
-	pubsub        *redis.PubSub
-	channelPrefix string
-	envID         string
+	client          *redis.Client
+	pubsub          *redis.PubSub
+	channelPrefix   string
+	envID           string
+	masterReadyChan string
 }
 
 // NewSession establishes a database connection.
@@ -32,7 +35,8 @@ func NewSession(host, channelPrefix string) (*Session, error) {
 		if err := client.Ping().Err(); err != nil {
 			return nil, err
 		}
-		ps := client.Subscribe(channelPrefix + ":act:" + envID)
+		masterReadyChan := channelPrefix + ":master-ready"
+		ps := client.Subscribe(channelPrefix+":act:"+envID, masterReadyChan)
 		_, err := ps.ReceiveTimeout(SubscribeTimeout)
 		if err != nil {
 			client.Close()
@@ -40,10 +44,11 @@ func NewSession(host, channelPrefix string) (*Session, error) {
 			return nil, err
 		}
 		return &Session{
-			client:        client,
-			pubsub:        ps,
-			channelPrefix: channelPrefix,
-			envID:         envID,
+			client:          client,
+			pubsub:          ps,
+			channelPrefix:   channelPrefix,
+			envID:           envID,
+			masterReadyChan: masterReadyChan,
 		}, nil
 	}
 }
@@ -73,6 +78,9 @@ func (s *Session) ReceiveAct() (act [4]bool, err error) {
 			return [4]bool{}, err
 		}
 		if msg, ok := msg.(*redis.Message); ok {
+			if msg.Channel == s.masterReadyChan {
+				return [4]bool{}, ErrNewMaster
+			}
 			if len(msg.Payload) != 4 {
 				return [4]bool{}, errors.New("invalid payload size")
 			}

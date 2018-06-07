@@ -75,6 +75,8 @@ class Conn:
 
     def _handle_message(self, msg):
         LOGGER.debug('got message of type %s on channel %s', msg['type'], msg['channel'])
+        if msg['type'] == 'psubscribe':
+            self._conn.publish('%s:master-ready' % self._channel_prefix, 'ready')
         if msg['type'] != 'pmessage':
             return
         data = msg['data']
