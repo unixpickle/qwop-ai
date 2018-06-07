@@ -74,7 +74,7 @@ class RemoteRoller(Roller):
         for rollout in self._current_rollouts.values():
             if rollout.num_steps >= self.min_horizon:
                 num_rollouts += 1
-        return num_rollouts >= len(self.min_rollouts)
+        return num_rollouts >= self.min_rollouts
 
     def _extract_usable_rollouts(self):
         """

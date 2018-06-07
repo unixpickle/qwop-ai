@@ -4,6 +4,7 @@ Train a QWOP agent.
 
 import argparse
 import logging
+import os
 
 from anyrl.algos import PPO
 from anyrl.models import CNN
@@ -11,8 +12,8 @@ from anyrl.spaces import gym_space_distribution, gym_space_vectorizer
 import gym
 import tensorflow as tf
 
-from .conn import Conn
-from .roller import RemoteRoller
+from qwop_master.conn import Conn
+from qwop_master.roller import RemoteRoller
 
 
 def main():
