@@ -2,9 +2,12 @@
 Gathering remote rollouts.
 """
 
+import logging
 import time
 
 from anyrl.rollouts import Roller, empty_rollout, inject_state, reduce_model_outs, reduce_states
+
+LOGGER = logging.getLogger('roller')
 
 
 class RemoteRoller(Roller):
@@ -47,10 +50,12 @@ class RemoteRoller(Roller):
 
     def rollouts(self):
         while not self._has_enough_rollouts():
+            LOGGER.debug('roller: reading batch of states')
             state_buffer = self.conn.read_states()
             while len(state_buffer) < self.min_step_batch:
                 time.sleep(0.001)
                 state_buffer.extend(self.conn.read_states())
+            LOGGER.debug('roller: handling the batch of states')
             env_ids, obses, rews, news = [], [], [], []
             for state in state_buffer:
                 key_names = ['env_id', 'obs', 'rew', 'new']

@@ -17,9 +17,13 @@ from qwop_master.roller import RemoteRoller
 
 
 def main():
-    logging.basicConfig(level=logging.INFO)
-
     args = arg_parser().parse_args()
+
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
     conn = Conn(args.redis_host, args.redis_port, args.channel, obs_size=args.obs_size)
 
     with tf.Session() as sess:
@@ -54,6 +58,8 @@ def create_model(args, sess):
 
 def arg_parser():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--verbose', help='Show debug logs', action='store_true')
+
     parser.add_argument('--redis-host', help='Redis host', default='qwop-redis')
     parser.add_argument('--redis-port', help='Redis port', default=6379, type=int)
     parser.add_argument('--channel', help='worker channel prefix', default='qwop-worker')
