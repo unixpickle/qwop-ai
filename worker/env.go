@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	EnvWaitTimeout    = time.Second * 20
-	EnvStepTimeout    = time.Second * 20
-	EnvObserveTimeout = time.Second * 20
-	EnvResetTimeout   = time.Second * 20
-	EnvScoreTimeout   = time.Second * 20
+	EnvWaitTimeout    = time.Minute
+	EnvStepTimeout    = time.Minute
+	EnvObserveTimeout = time.Minute
+	EnvResetTimeout   = time.Minute
+	EnvScoreTimeout   = time.Minute
 )
 
 // WaitForEnv waits for the environment page to load.
