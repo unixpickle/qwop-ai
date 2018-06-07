@@ -12,6 +12,7 @@
 //   boolean indicating if the game is over.
 // - reset(): start a new game. Should only be called
 //   once the current game is over.
+// - score(): get the current score.
 
 // CHANGE: global variables used to hook into the game.
 TIMESTEP_DURATION = 1 / 15;
@@ -54,6 +55,9 @@ window.qwopControl = {
         for (var i = 0; i < INIT_STEPS; ++i) {
             this.step();
         }
+    },
+    'score': function() {
+        return this.mainObject.score;
     },
     'mainObject': null,
     'timestamp': 0,
