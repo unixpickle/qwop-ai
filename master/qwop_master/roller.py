@@ -129,8 +129,8 @@ class RemoteRoller(Roller):
         for i, (env_id, obs) in enumerate(zip(env_ids, obses)):
             reduced = reduce_model_outs(outputs, i)
             if env_id not in self._current_rollouts:
-                self._current_rollouts[i] = empty_rollout(reduce_states(start_states, i))
-            rollout = self._current_rollouts[i]
+                self._current_rollouts[env_id] = empty_rollout(reduce_states(start_states, i))
+            rollout = self._current_rollouts[env_id]
             rollout.end_time = time.time()
             rollout.observations.append(obs)
             rollout.model_outs.append(reduced)
