@@ -83,16 +83,7 @@ func StepEnv(conn *chrome.Conn, action [4]bool) (doneEp bool, err error) {
 // scaled to [size x size].
 func ObserveEnv(conn *chrome.Conn, size int) (data []byte, err error) {
 	defer essentials.AddCtxTo("ObserveEnv", &err)
-
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(EnvObserveTimeout))
-	defer cancel()
-
-	code := fmt.Sprintf("Promise.resolve(window.qwopControl.screenshot(%d, %d))", size, size)
-	var base64Data string
-	if err := conn.EvalPromise(ctx, code, &base64Data); err != nil {
-		return nil, err
-	}
-	imageData, err := base64.StdEncoding.DecodeString(base64Data)
+	imageData, err := PNGForEnv(conn, size, size)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +99,21 @@ func ObserveEnv(conn *chrome.Conn, size int) (data []byte, err error) {
 		}
 	}
 	return res, nil
+}
+
+// PNGForEnv gets a raw PNG screenshot for an environment.
+func PNGForEnv(conn *chrome.Conn, width, height int) (data []byte, err error) {
+	defer essentials.AddCtxTo("PNGForEnv", &err)
+
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(EnvObserveTimeout))
+	defer cancel()
+
+	code := fmt.Sprintf("Promise.resolve(window.qwopControl.screenshot(%d, %d))", width, height)
+	var base64Data string
+	if err := conn.EvalPromise(ctx, code, &base64Data); err != nil {
+		return nil, err
+	}
+	return base64.StdEncoding.DecodeString(base64Data)
 }
 
 // ResetEnv resets the environment.

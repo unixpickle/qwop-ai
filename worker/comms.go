@@ -94,6 +94,12 @@ func (s *Session) ReceiveAct() (act [4]bool, err error) {
 	}
 }
 
+// SendRawScreen sends screenshot data to any script that
+// is recording video.
+func (s *Session) SendRawScreen(channel string, data []byte) error {
+	return essentials.AddCtx("SendRawScreen", s.client.Publish(channel, data).Err())
+}
+
 func (s *Session) Close() error {
 	s.pubsub.Close()
 	return s.client.Close()

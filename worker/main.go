@@ -19,10 +19,16 @@ import (
 	"github.com/unixpickle/muniverse/chrome"
 )
 
+const (
+	GameWidth  = 640
+	GameHeight = 400
+)
+
 type Args struct {
 	RedisHost     string
 	RedisPort     int
 	ChannelPrefix string
+	MovieChannel  string
 	NumEnvs       int
 	Chrome        string
 
@@ -41,6 +47,8 @@ func main() {
 	flag.StringVar(&args.RedisHost, "redis-host", "qwop-redis", "the Redis host")
 	flag.IntVar(&args.RedisPort, "redis-port", 6379, "the Redis port")
 	flag.StringVar(&args.ChannelPrefix, "channel", "qwop-worker", "the prefix for channel names")
+	flag.StringVar(&args.MovieChannel, "movie-channel", "",
+		"a channel on which to broadcast the raw PNG data of each screen")
 	flag.IntVar(&args.NumEnvs, "envs", 4, "number of environments to run")
 	flag.StringVar(&args.Chrome, "chrome", "chromium-browser", "Chrome executable name")
 
@@ -104,6 +112,13 @@ func RunEnvironment(args *Args, idx int) {
 	newEpisode := true
 	timesteps := 0
 	for {
+		if args.MovieChannel != "" {
+			log.Printf("%s: broadcasting movie frame", session.EnvID())
+			imageData, err := PNGForEnv(chromeClient, GameWidth, GameHeight)
+			essentials.Must(err)
+			essentials.Must(session.SendRawScreen(args.MovieChannel, imageData))
+		}
+
 		log.Printf("%s: encoding state", session.EnvID())
 		state, err := StateForEnv(chromeClient, newEpisode, args.ImageSize)
 		essentials.Must(err)
@@ -146,7 +161,7 @@ func StartChrome(chromeExec, serverAddr string, port int) (*chrome.Conn, *exec.C
 		"--headless",
 		"--remote-debugging-port="+strconv.Itoa(port),
 		"--remote-debugging-address=0.0.0.0",
-		"--window-size=640x400",
+		fmt.Sprintf("--window-size=%dx%d", GameWidth, GameHeight),
 		"http://"+serverAddr+"/index.html")
 	if err := command.Start(); err != nil {
 		return nil, nil, err
