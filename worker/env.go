@@ -43,9 +43,9 @@ func WaitForEnv(conn *chrome.Conn) (err error) {
 }
 
 // EncourageStandingForEnv enables kneeling penalty.
-func EncourageStandingForEnv(conn *chrome.Conn) (err error) {
-	defer essentials.AddCtxTo("EncourageStandingForEnv", &err)
-	code := `Promise.resolve(window.qwopControl.encourageStanding())`
+func SetStandingBonusForEnv(conn *chrome.Conn, bonus float64) (err error) {
+	defer essentials.AddCtxTo("SetStandingBonusForEnv", &err)
+	code := fmt.Sprintf("Promise.resolve(window.qwopControl.setStandingBonus(%f))", bonus)
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(EnvWaitTimeout))
 	defer cancel()
 	return conn.EvalPromise(ctx, code, nil)

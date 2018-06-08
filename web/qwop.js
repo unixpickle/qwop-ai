@@ -15,8 +15,8 @@
 // - score(): get the current score.
 // - screenshot(width, height): get a screenshot as a
 //   base64-encoded PNG.
-// - encourageStanding(): enable a bonus that encourages
-//   the agent to stand up straight.
+// - setStandingBonus(): set a bonus for every timestep
+//   that the agent is not kneeling.
 
 // CHANGE: global variables used to hook into the game.
 TIMESTEP_DURATION = 1 / 15;
@@ -75,8 +75,8 @@ window.qwopControl = {
         var prefixLen = 'data:image/png;base64,'.length;
         return dst.toDataURL('image/png').slice(prefixLen);
     },
-    'encourageStanding': function() {
-        this.standingBonus = 0.1;
+    'setStandingBonus': function(value) {
+        this.standingBonus = value;
     },
     'mainObject': null,
     'timestamp': 0,
