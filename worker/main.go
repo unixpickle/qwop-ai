@@ -32,8 +32,9 @@ type Args struct {
 	NumEnvs       int
 	Chrome        string
 
-	ImageSize     int
-	TimestepLimit int
+	ImageSize         int
+	TimestepLimit     int
+	EncourageStanding bool
 
 	ServerAddr string
 	ServerPath string
@@ -54,6 +55,8 @@ func main() {
 
 	flag.IntVar(&args.ImageSize, "image-size", 84, "size of observation images")
 	flag.IntVar(&args.TimestepLimit, "timestep-limit", 900, "max timesteps per episode")
+	flag.BoolVar(&args.EncourageStanding, "encourage-standing", false,
+		"encourage the agent to stand upright")
 
 	flag.StringVar(&args.ServerAddr, "server-addr", "127.0.0.1:8080", "address for the server")
 	flag.StringVar(&args.ServerPath, "server-path", "/web", "URL for the server")
@@ -109,6 +112,12 @@ func RunEnvironment(args *Args, idx int) {
 
 	log.Printf("%s: waiting for environment", session.EnvID())
 	essentials.Must(WaitForEnv(chromeClient))
+
+	if args.EncourageStanding {
+		log.Printf("%s: enabling standing bonus", session.EnvID())
+		essentials.Must(EncourageStandingForEnv(chromeClient))
+	}
+
 	newEpisode := true
 	timesteps := 0
 	for {

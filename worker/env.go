@@ -42,6 +42,15 @@ func WaitForEnv(conn *chrome.Conn) (err error) {
 	return errors.New("game never started")
 }
 
+// EncourageStandingForEnv enables kneeling penalty.
+func EncourageStandingForEnv(conn *chrome.Conn) (err error) {
+	defer essentials.AddCtxTo("EncourageStandingForEnv", &err)
+	code := `Promise.resolve(window.qwopControl.encourageStanding())`
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(EnvWaitTimeout))
+	defer cancel()
+	return conn.EvalPromise(ctx, code, nil)
+}
+
 // StepEnv runs the environment for one timestep.
 //
 // Returns true if the episode is complete.

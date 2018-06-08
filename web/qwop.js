@@ -15,10 +15,13 @@
 // - score(): get the current score.
 // - screenshot(width, height): get a screenshot as a
 //   base64-encoded PNG.
+// - encourageStanding(): enable a bonus that encourages
+//   the agent to stand up straight.
 
 // CHANGE: global variables used to hook into the game.
 TIMESTEP_DURATION = 1 / 15;
 INIT_STEPS = 15;
+KNEE_THRESHOLD = 6.7;
 window.qwopControl = {
     'wait': function() {
         return new Promise((resolve) => {
@@ -53,6 +56,7 @@ window.qwopControl = {
         //     throw Error('episode is not finished');
         // }
         this.isDone = false;
+        this.totalBonus = 0;
         this.mainObject.oninputup('reset');
         this.setButtons([false, false, false, false]);
         for (var i = 0; i < INIT_STEPS; ++i) {
@@ -60,7 +64,7 @@ window.qwopControl = {
         }
     },
     'score': function() {
-        return this.mainObject.score;
+        return this.mainObject.score + this.totalBonus;
     },
     'screenshot': function(width, height) {
         var canvas = document.getElementsByTagName('canvas')[0];
@@ -71,9 +75,16 @@ window.qwopControl = {
         var prefixLen = 'data:image/png;base64,'.length;
         return dst.toDataURL('image/png').slice(prefixLen);
     },
+    'encourageStanding': function() {
+        this.standingBonus = 0.1;
+    },
     'mainObject': null,
     'timestamp': 0,
-    'isDone': false
+    'isDone': false,
+    'totalBonus': 0,
+    'standingBonus': 0,
+    'leftKneeY': 0,
+    'rightKneeY': 0
 };
 
 ! function() {
@@ -955,6 +966,8 @@ window.qwopControl = {
                     var d = _++;
                     c += this.speedArray[d]
                 }
+                window.qwopControl.leftKneeY = this.leftKnee.m_bodyA.m_xf.position.y;
+                window.qwopControl.rightKneeY = this.rightKnee.m_bodyA.m_xf.position.y;
                 var y = c / this.speedArray.length;
                 if (m.audio.volume("music", Math.min(Math.max((y - 2) / 15, 0), 1)), 1 == this.mute && m.audio.volume("music", 0), 1 == this.QDown ? (this.rightHip.setMotorSpeed(2.5), this.leftHip.setMotorSpeed(-2.5), this.rightShoulder.setMotorSpeed(-2), this.rightElbow.setMotorSpeed(-10), this.leftShoulder.setMotorSpeed(2), this.leftElbow.setMotorSpeed(-10)) : 1 == this.WDown ? (this.rightHip.setMotorSpeed(-2.5), this.leftHip.setMotorSpeed(2.5), this.rightShoulder.setMotorSpeed(2), this.rightElbow.setMotorSpeed(10), this.leftShoulder.setMotorSpeed(-2), this.leftElbow.setMotorSpeed(10)) : (this.rightHip.setMotorSpeed(0), this.leftHip.setMotorSpeed(0), this.leftShoulder.setMotorSpeed(0), this.rightShoulder.setMotorSpeed(0)), 1 == this.ODown ? (this.rightKnee.setMotorSpeed(2.5), this.leftKnee.setMotorSpeed(-2.5), this.leftHip.setLimits(-1, 1), this.rightHip.setLimits(-1.3, .7)) : 1 == this.PDown ? (this.rightKnee.setMotorSpeed(-2.5), this.leftKnee.setMotorSpeed(2.5), this.leftHip.setLimits(-1.5, .5), this.rightHip.setLimits(-.8, 1.2)) : (this.rightKnee.setMotorSpeed(0), this.leftKnee.setMotorSpeed(0)), 1 == this.QDown) {
                     var f = this.uiData.frames[15];
@@ -11156,6 +11169,10 @@ window.qwopControl = {
                 if (window.qwopControl.wantsUpdate) {
                     window.qwopControl.wantsUpdate = false;
                     this.snow_core_loop(TIMESTEP_DURATION * 1e3);
+                }
+                var kneeY = Math.max(window.qwopControl.leftKneeY, window.qwopControl.rightKneeY);
+                if (kneeY < KNEE_THRESHOLD) {
+                    window.qwopControl.totalBonus += window.qwopControl.standingBonus;
                 }
                 return window.qwopControl.isDone;
             };
