@@ -16,3 +16,7 @@ Here are the components of the training system:
  * Workers - a set of CPU instances that asynchronously run multiple environments and ask the master for actions at every timestep.
 
 This setup has a nice consequence: it is really easy to monitor and debug. For example, if every worker sends an environment's frames to a different Redis channel, then a third-party can hook into one of those Redis channels and passively watch the agent play.
+
+# Results
+
+The agent learns the optimal "kneeling" gate, which looks lame, but I'm told is the best you can do.
