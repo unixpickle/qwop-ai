@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: qwop-worker-movie
+  labels:
+    app: qwop
+    name: qwop-worker-movie
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: qwop-worker-movie
+  template:
+    metadata:
+      labels:
+        app: qwop
+        name: qwop-worker-movie
+    spec:
+      containers:
+      - name: qwop-worker-movie
+        image: unixpickle/qwop-worker
+        resources:
+          limits:
+            cpu: 1
+            memory: 4G
+        args:
+        - "-envs=1"
+        - "-standing-bonus=0.05"
+        - "-timestep-limit=4000"
+        - "-movie-channel=movie"
