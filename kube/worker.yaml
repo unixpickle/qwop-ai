@@ -6,7 +6,7 @@ metadata:
     app: qwop
     name: qwop-worker
 spec:
-  replicas: 1
+  replicas: 64
   selector:
     matchLabels:
       name: qwop-worker
@@ -25,3 +25,4 @@ spec:
             memory: 4G
         args:
         - "-envs=1"
+        - "-standing-bonus=0.05"
